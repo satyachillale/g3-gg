@@ -177,7 +177,7 @@ def run(args):
             df = pd.read_csv(os.path.join(root_path, text_path))
             I = np.load('./index/{}.npy'.format(searching_file_name))
             reverse_I = np.load('./index/{}_reverse.npy'.format(searching_file_name))
-            for i in tqdm(range(100)):
+            for i in tqdm(range(df.shape[0])):
                 candidate_idx_lis = I[i]
                 candidate_gps = database_df.loc[candidate_idx_lis, ['LAT', 'LON', 'city', 'state', 'country']].values
                 for idx, (latitude, longitude, city, state, country) in enumerate(candidate_gps):
