@@ -26,9 +26,8 @@ singularity exec --bind /scratch/sc9960 --nv \
             --overlay /scratch/sc9960/cv_project/g3-variant/singularity-image/g3-gg.ext3:ro \
             /scratch/work/public/singularity/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif \
             /bin/bash -c "source /ext3/env.sh; 
-            cd /scratch/sc9960/cv_project/g3-variant/code/CV-project-G3; 
-	    python llm_predict.py --rag_sample_num=5
-	    python llm_predict.py --rag_sample_num=15
-	    python llm_predict.py --process=predict
-	    running aggregate_llm_predictions.py
-	    python IndexSearch.py"
+            cd /scratch/sc9960/cv_project/g3-variant/g3-gg/src;
+			python llm_predict.py --rag_sample_num=15
+			python llm_predict.py --process=predict
+			running aggregate_llm_predictions.py
+			python IndexSearch.py"
