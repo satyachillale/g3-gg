@@ -33,7 +33,7 @@ singularity exec --bind /scratch/sc9960 --nv \
             python IndexSearchReverse.py;
             python llm_predict.py --rag_sample_num=15;
             python llm_predict.py --rag_sample_num=10;
-			python llm_predict.py --rag_sample_num=5;
-			python llm_predict.py --process=predict;
-			running aggregate_llm_predictions.py;
-			python IndexSearch.py"
+	    python llm_predict.py --rag_sample_num=5;
+	    python llm_predict.py --process=predict;
+	    python aggregate_llm_predictions.py;
+	    python IndexSearch.py"
