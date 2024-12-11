@@ -11,7 +11,7 @@ rag_15_df = pd.read_csv('./data/im2gps3k/15_llm_predict_results_rag.csv')
 
 pattern = r'[-+]?\d+\.\d+'
 
-for i in tqdm(range(100)):
+for i in tqdm(range(zs_df.shape[0])):
     response = zs_df.loc[i, 'response']
     if pd.isna(response) or not response:
         continue
@@ -28,7 +28,7 @@ for i in tqdm(range(100)):
             df_raw.loc[i, f'zs_{idx}_longitude'] = '0.0'
 
 
-for i in tqdm(range(100)):
+for i in tqdm(range(df_raw.shape[0])):
     response = rag_5_df.loc[i, 'rag_response']
     if pd.isna(response) or not response:
         continue
@@ -44,7 +44,7 @@ for i in tqdm(range(100)):
             df_raw.loc[i, f'5_rag_{idx}_latitude'] = '0.0'
             df_raw.loc[i, f'5_rag_{idx}_longitude'] = '0.0'
 
-for i in tqdm(range(100)):
+for i in tqdm(range(df_raw.shape[0])):
     response = rag_10_df.loc[i, 'rag_response']
     if pd.isna(response) or not response:
         continue
@@ -60,7 +60,7 @@ for i in tqdm(range(100)):
             df_raw.loc[i, f'10_rag_{idx}_latitude'] = '0.0'
             df_raw.loc[i, f'10_rag_{idx}_longitude'] = '0.0'
 
-for i in tqdm(range(100)):
+for i in tqdm(range(df_raw.shape[0])):
     response = rag_15_df.loc[i, 'rag_response']
     if pd.isna(response) or not response:
         continue
