@@ -177,7 +177,7 @@ def run(args):
         database_df = pd.read_csv('./data/MP16_Pro_filtered.csv')
         if not os.path.exists(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path)):
             df = pd.read_csv(os.path.join(root_path, text_path))
-            df = df.head(10)
+            df = df.head(15)
             I = np.load('./index/{}.npy'.format(searching_file_name))
             reverse_I = np.load('./index/{}_reverse.npy'.format(searching_file_name))
             for i in tqdm(range(df.shape[0])):
@@ -222,7 +222,7 @@ if __name__ == '__main__':
     rag_sample_num = 15
     searching_file_name = 'I_g3_im2gps3k'
 
-    pandarallel.initialize(progress_bar=True, nb_workers=6)
+    pandarallel.initialize(progress_bar=True, nb_workers=4)
     args.add_argument('--api_key', type=str, default=api_key)
     args.add_argument('--model_name', type=str, default=model_name)
     args.add_argument('--base_url', type=str, default=base_url)
