@@ -156,6 +156,7 @@ def run(args):
     if process == 'predict':
         if os.path.exists(os.path.join(root_path, result_path)):
             df = pd.read_csv(os.path.join(root_path, result_path))
+            df = df.head(50)
             df_rerun = df[df['response'].isna()]
             print('Need Rerun:', df_rerun.shape[0])
             df_rerun = df_rerun.parallel_apply(lambda row: process_row(row, base_url, api_key, model_name, root_path, image_path), axis=1)
@@ -176,6 +177,7 @@ def run(args):
         database_df = pd.read_csv('./data/MP16_Pro_filtered.csv')
         if not os.path.exists(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path)):
             df = pd.read_csv(os.path.join(root_path, text_path))
+            df = df.head(50)
             I = np.load('./index/{}.npy'.format(searching_file_name))
             reverse_I = np.load('./index/{}_reverse.npy'.format(searching_file_name))
             for i in tqdm(range(df.shape[0])):
