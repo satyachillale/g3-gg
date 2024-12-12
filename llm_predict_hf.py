@@ -11,7 +11,7 @@ import time
 import argparse
 from PIL import Image
 import torch
-from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
+from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration, AutoModelForVision2Seq
 import datetime
 
 def encode_image(image_path):
@@ -34,7 +34,7 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
             ],
         },
     ]
-    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+    prompt = processor.tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
     inputs = processor(prompt, image, return_tensors="pt").to(model.device)
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
     ans = []
@@ -175,8 +175,8 @@ if __name__ == '__main__':
     rag_sample_num = 5
     searching_file_name = 'I_g3_im2gps3k'
 
-    processor = LlavaNextProcessor.from_pretrained(model_path)
-    model = LlavaNextForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+    processor = LlavaNextProcessor.from_pretrained("lmms-lab/llama3-llava-next-8b")
+    model = AutoModelForVision2Seq.from_pretrained.from_pretrained("lmms-lab/llama3-llava-next-8b", torch_dtype=torch.float16, device_map="auto")
 
     # pandarallel.initialize(progress_bar=True, nb_workers=4)
     args.add_argument('--root_path', type=str, default=root_path)

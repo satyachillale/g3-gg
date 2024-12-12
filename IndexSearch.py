@@ -146,8 +146,8 @@ class GeoImageDataset(Dataset):
                 float(self.dataframe.loc[idx, f'10_rag_{j}_longitude']),
                 float(self.dataframe.loc[idx, f'15_rag_{j}_latitude']),
                 float(self.dataframe.loc[idx, f'15_rag_{j}_longitude']),
-                float(self.dataframe.loc[idx, f'zs_{j}_latitude']),
-                float(self.dataframe.loc[idx, f'zs_{j}_longitude']),
+                # float(self.dataframe.loc[idx, f'zs_{j}_latitude']),
+                # float(self.dataframe.loc[idx, f'zs_{j}_longitude']),
                 search_top1_latitude,
                 search_top1_longitude
             ])
