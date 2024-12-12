@@ -1,3 +1,4 @@
+# change open ai key, and workers to 6
 import requests
 import base64
 import os
@@ -235,5 +236,4 @@ if __name__ == '__main__':
     print(args)
 
     run(args)
-
 

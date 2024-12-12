@@ -42,7 +42,6 @@ def build_index(args):
             image_location_embeds = image_location_embeds / image_location_embeds.norm(p=2, dim=-1, keepdim=True)
 
             image_embeds = torch.cat([image_embeds, image_text_embeds, image_location_embeds], dim=1)
-            #image_embeds = -1 * image_embeds
             index_flat.add(image_embeds.cpu().detach().numpy())
 
         faiss.write_index(index_flat, f'./index/{args.index}.index')
@@ -76,7 +75,6 @@ def search_index(args, index, topk):
                 image_location_embeds = image_location_embeds / image_location_embeds.norm(p=2, dim=-1, keepdim=True)
 
                 image_embeds = torch.cat([image_embeds, image_text_embeds, image_location_embeds], dim=1)
-                #image_embeds = -1 * image_embeds
                 test_images_embeds = np.concatenate([test_images_embeds, image_embeds.cpu().detach().numpy()], axis=0)
             print(test_images_embeds.shape)
             test_images_embeds = test_images_embeds.reshape(-1, 768*3)
@@ -146,8 +144,8 @@ class GeoImageDataset(Dataset):
                 float(self.dataframe.loc[idx, f'10_rag_{j}_longitude']),
                 float(self.dataframe.loc[idx, f'15_rag_{j}_latitude']),
                 float(self.dataframe.loc[idx, f'15_rag_{j}_longitude']),
-                # float(self.dataframe.loc[idx, f'zs_{j}_latitude']),
-                # float(self.dataframe.loc[idx, f'zs_{j}_longitude']),
+                float(self.dataframe.loc[idx, f'zs_{j}_latitude']),
+                float(self.dataframe.loc[idx, f'zs_{j}_longitude']),
                 search_top1_latitude,
                 search_top1_longitude
             ])
@@ -163,6 +161,7 @@ def evaluate(args, I):
         df['NN_idx'] = I[:, 0]
         df['LAT_pred'] = df.apply(lambda x: database.loc[x['NN_idx'],'LAT'], axis=1)
         df['LON_pred'] = df.apply(lambda x: database.loc[x['NN_idx'],'LON'], axis=1)
+
         df_llm = pd.read_csv(f'./data/{args.dataset}/{args.dataset}_prediction.csv')
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
         model = G3(device).to(device)
@@ -204,7 +203,6 @@ def evaluate(args, I):
                 df.loc[final_idx, 'LAT_pred'] = final_latitude
                 df.loc[final_idx, 'LON_pred'] = final_longitude
 
-        df = df.dropna()
         df['geodesic'] = df.apply(lambda x: geodesic((x['LAT'], x['LON']), (x['LAT_pred'], x['LON_pred'])).km, axis=1)
         print(df.head())
         df.to_csv(f'./data/{args.dataset}_{args.index}_results.csv', index=False)

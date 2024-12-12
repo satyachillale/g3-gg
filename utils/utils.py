@@ -19,92 +19,6 @@ from PIL import ImageFile
 from torch.utils.data import get_worker_info
 ImageFile.LOAD_TRUNCATED_IMAGES = True  # Allow truncated images to be loaded
 
-class MP16DatasetUntar(VisionDataset):
-    def __init__(self, root_path='./data/', 
-                 text_data_path='MP16_Pro_places365.csv', 
-                 image_folder_path='images', 
-                 vision_processor=None, 
-                 text_processor=None):
-        
-        # Initialize paths and load text data
-        self.root_path = root_path
-        self.text_data_path = text_data_path
-        self.image_folder_path = os.path.join(root_path, image_folder_path)
-        
-        # Load text data
-        self.text_data = pd.read_csv(os.path.join(self.root_path, self.text_data_path))
-        
-        # Clean and standardize image IDs
-        self.text_data['IMG_ID'] = self.text_data['IMG_ID'].apply(lambda x: x.replace('/', '_'))
-        
-        # Filter out rows with null country and ensure images exist
-        self.text_data = self.text_data[self.text_data['country'].notnull()]
-        
-        # Create full list of image paths and verify they exist
-        image_paths = [os.path.join(self.image_folder_path, img_id) for img_id in self.text_data['IMG_ID']]
-        existing_images = [path for path in image_paths if os.path.exists(path)]
-        
-        # Filter text_data to only include existing images
-        self.text_data = self.text_data[self.text_data['IMG_ID'].isin([os.path.basename(path) for path in existing_images])]
-        
-        # Convert location to float
-        self.text_data.loc[:,'LON'] = self.text_data['LON'].astype(float)
-        self.text_data.loc[:,'LAT'] = self.text_data['LAT'].astype(float)
-        
-        # Image transforms
-        self.transform = T.Resize(size=(512, 512))
-        self.transform_totensor = T.ToTensor()
-        
-        # Vision and text processors
-        self.vision_processor = vision_processor
-        self.text_processor = text_processor
-        
-        # Contrast transforms
-        self.contrast_transforms = T.Compose([
-            T.RandomHorizontalFlip(),
-            T.RandomResizedCrop(size=224),
-            T.RandomApply([
-                T.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)
-            ], p=0.8),
-            T.RandomGrayscale(p=0.2),
-            T.GaussianBlur(kernel_size=9),
-            T.ToTensor()
-        ])
-        
-        print(f'Loaded dataset with {len(self.text_data)} images')
-    
-    def caption_generation(self, row):
-        pass
-
-    def __getitem__(self, index):
-        # Get image path and details from text data
-        image_path = self.text_data.iloc[index]['IMG_ID']
-        full_image_path = os.path.join(self.image_folder_path, image_path)
-        
-        # Construct location text
-        neighbourhood, city, county, state, region, country, continent = self.text_data.iloc[index][['neighbourhood', 'city', 'county', 'state', 'region', 'country', 'continent']]
-        location_elements = [element for element in [neighbourhood, city, state, country] if element is not np.nan and str(element) != 'nan']
-        text = 'A street view photo taken in ' + ', '.join(location_elements)
-        
-        # Read and process image
-        image = Image.open(full_image_path)
-        
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        
-        # Apply vision processor if provided
-        if self.vision_processor:
-            image = self.vision_processor(images=image, return_tensors='pt')['pixel_values'].reshape(3,224,224)
-        
-        # Get location details
-        longitude = self.text_data.iloc[index]['LON']
-        latitude = self.text_data.iloc[index]['LAT']
-        
-        return image, text, longitude, latitude
-    
-    def __len__(self):
-        return len(self.text_data)
-    
 class MP16Dataset(VisionDataset):
 
     def __init__(self, root_path='./data/', text_data_path='MP16_Pro_places365.csv', image_data_path='mp-16-images-20-new.tar', member_info_path='tar_index.pkl', vision_processor= None, text_processor=None):
@@ -131,7 +45,7 @@ class MP16Dataset(VisionDataset):
             self.tar_index = {}
             all_image_names = []
             for member in tqdm(self.tar_obj[worker]):
-                if member.name.endswith('.jpg') and member.size > 5120: 
+                if member.name.endswith('.jpg') and member.size > 5120:
                     self.tar_index[member.name.split('/')[1]] = member
                     all_image_names.append(member.name.split('/')[1])
             print('tar index buidling success')

@@ -1,3 +1,4 @@
+# changes loading model from checkpoint, unwrapping
 import torch
 import os
 import numpy as np
@@ -52,7 +53,7 @@ def main():
     model.location_encoder.load_state_dict(location_encoder_dict)
 
     dataset = MP16Dataset(vision_processor = model.vision_processor, text_processor = model.text_processor)
-    dataloader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=3)
+    dataloader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
 
 
     params = []
@@ -61,22 +62,23 @@ def main():
             print(name, param.size())
             params.append(param)
 
-    optimizer = torch.optim.AdamW([param for name,param in model.named_parameters() if param.requires_grad], lr=7e-7, weight_decay=1e-6)
+    optimizer = torch.optim.AdamW([param for name,param in model.named_parameters() if param.requires_grad], lr=3e-5, weight_decay=1e-6)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.87)
 
     model, optimizer, dataloader, scheduler = accelerator.prepare(
         model, optimizer, dataloader, scheduler
     )
-     
+
     unwrapped_model = accelerator.unwrap_model(model)
     vision_processor = unwrapped_model.vision_processor
     text_processor = unwrapped_model.text_processor
-    
+
     eval_dataloader = None
     earlystopper = None
-    for epoch in range(5):
+    for epoch in range(10):
         train_1epoch(dataloader, eval_dataloader, earlystopper, model, vision_processor, text_processor, optimizer, scheduler, device, accelerator)
         unwrapped_model = accelerator.unwrap_model(model)
         torch.save(unwrapped_model.state_dict(), './checkpoints/g3.pth')
+
 if __name__ == '__main__':
     main()
