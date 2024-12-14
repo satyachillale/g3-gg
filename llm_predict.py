@@ -156,7 +156,6 @@ def run(args):
     if process == 'predict':
         if os.path.exists(os.path.join(root_path, result_path)):
             df = pd.read_csv(os.path.join(root_path, result_path))
-            df = df.head(10)
             df_rerun = df[df['response'].isna()]
             print('Need Rerun:', df_rerun.shape[0])
             df_rerun = df_rerun.parallel_apply(lambda row: process_row(row, base_url, api_key, model_name, root_path, image_path), axis=1)
@@ -164,6 +163,7 @@ def run(args):
             df.to_csv(os.path.join(root_path, result_path), index=False)
         else:
             df = pd.read_csv(os.path.join(root_path, text_path))
+            df = df.head(40)
             df = df.parallel_apply(lambda row: process_row(row, base_url, api_key, model_name, root_path, image_path), axis=1)
             df.to_csv(os.path.join(root_path, result_path), index=False)
 
@@ -177,7 +177,7 @@ def run(args):
         database_df = pd.read_csv('./data/MP16_Pro_filtered.csv')
         if not os.path.exists(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path)):
             df = pd.read_csv(os.path.join(root_path, text_path))
-            df = df.head(15)
+            df = df.head(40)
             I = np.load('./index/{}.npy'.format(searching_file_name))
             reverse_I = np.load('./index/{}_reverse.npy'.format(searching_file_name))
             for i in tqdm(range(df.shape[0])):
@@ -209,8 +209,6 @@ def run(args):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-    api_key = os.environ.get("OPENAI_API_KEY")
-    model_name = "gpt-4o" # gpt-4-vision-preview, gpt-4-turbo-2024-04-09
     base_url = "https://api.openai.com/v1/chat/completions"
 
     root_path = "./data/im2gps3k"

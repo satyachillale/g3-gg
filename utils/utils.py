@@ -21,7 +21,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True  # Allow truncated images to be loaded
 
 class MP16Dataset(VisionDataset):
 
-    def __init__(self, root_path='./data/', text_data_path='MP16_Pro_places365.csv', image_data_path='mp-16-images-20-new.tar', member_info_path='tar_index.pkl', vision_processor= None, text_processor=None):
+    def __init__(self, root_path='./data/', text_data_path='remaining_dataset.csv', image_data_path='mp-16-images.tar', member_info_path='tar_index.pkl', vision_processor= None, text_processor=None):
         super().__init__(self)
         self.root_path = root_path
         self.text_data_path = text_data_path
@@ -90,8 +90,8 @@ class MP16Dataset(VisionDataset):
     def __getitem__(self, index):
         image_path = self.text_data.iloc[index]['IMG_ID']
         text = ''
-        neighbourhood, city, county, state, region, country, continent = self.text_data.iloc[index][['neighbourhood', 'city', 'county', 'state', 'region', 'country', 'continent']]
-        # location_elements = [element for element in [neighbourhood, city, state, country] if element is not np.nan and str(element) != 'nan']
+        #neighbourhood, city, county, state, region, country, continent = self.text_data.iloc[index][['neighbourhood', 'city', 'county', 'state', 'region', 'country', 'continent']]
+        location_elements = [element for element in [neighbourhood, city, state, country] if element is not np.nan and str(element) != 'nan']
         location_elements = [element for element in [city, state, country] if element is not np.nan and str(element) != 'nan']
         text = 'A street view photo taken in '+', '.join(location_elements)
         
