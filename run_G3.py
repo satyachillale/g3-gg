@@ -10,6 +10,7 @@ from utils.G3 import G3
 from accelerate import Accelerator, DistributedDataParallelKwargs
 import warnings
 import webdataset as wds
+import pandas as pd
 
 warnings.filterwarnings('ignore')
 
@@ -17,6 +18,7 @@ def train_1epoch(dataloader, eval_dataloader, earlystopper, model, vision_proces
     model.train()
     t = tqdm(dataloader, disable=not accelerator.is_local_main_process)
     for i, (images, texts, longitude, latitude) in enumerate(t):
+
         texts = text_processor(text=texts, padding='max_length', truncation=True, return_tensors='pt', max_length=77)
         images = images.to(device)
         texts = texts.to(device)
@@ -52,8 +54,19 @@ def main():
         print(f"File does not exist. Skipping model load.")
     location_encoder_dict = torch.load('location_encoder.pth') # from geoclip
     model.location_encoder.load_state_dict(location_encoder_dict)
+
+    csv_path = "./data/MP16_Pro_places365.csv"
+    curated_list = set(pd.read_csv(csv_path)['IMG_ID'].str.strip())
+
+    def filter_function(sample):
+        key = sample[0]  # The first item in sample is the key
+        filename = key.split("/")[-1]  # Extract filename from key
+        return filename in curated_list
+
+
     wds_dataset = (
-            wds.WebDataset("./data/mp-16-images.tar").with_options(splitter=wds.shardlists.split_by_worker)
+            wds.WebDataset("./data/mp-16-images.tar")
+            .select(filter_function)
             .decode("pil")
             .to_tuple("jpg", "__key__")
         )

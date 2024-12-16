@@ -27,13 +27,14 @@ class MP16Dataset(Dataset):
 
         # Initialize paths and metadata
         self.root_path = root_path
+        self.wds_dataset = wds_dataset
         self.text_data_path = os.path.join(root_path, text_data_path)
         self.image_data_path = os.path.join(root_path, image_data_path)
         self.text_data = pd.read_csv(self.text_data_path)
         self.full_text_data_path = os.path.join(root_path, full_text_data_path)
         # Preprocess text data
         self.text_data['IMG_ID'] = self.text_data['IMG_ID'].apply(lambda x: x.replace('/', '_'))
-        self.text_data = self.text_data[self.text_data['country'].notnull()]
+        # self.text_data = self.text_data[self.text_data['country'].notnull()]
         print('Text data loaded:', self.text_data.shape[0])
 
         # Convert longitude and latitude
@@ -44,27 +45,6 @@ class MP16Dataset(Dataset):
         # Optional: Add vision_processor
         self.vision_processor = vision_processor
         self.text_processor = text_processor
-        self.wds_dataset = wds_dataset
-        # Image transformations
-        # self.transform = T.Compose([
-        #     T.Resize((512, 512)),
-        #     T.ToTensor()
-        # ])
-
-        # Define contrast transforms (for augmentations)
-        # self.contrast_transforms = T.Compose([
-        #     T.RandomHorizontalFlip(),
-        #     T.RandomResizedCrop(size=224),
-        #     T.RandomApply([
-        #         T.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)
-        #     ], p=0.8),
-        #     T.RandomGrayscale(p=0.2),
-        #     T.GaussianBlur(kernel_size=9),
-        #     T.ToTensor()
-        # ])
-
-    def caption_generation(self, row):
-        pass
 
     def __getitem__(self, index):
         # Fetch metadata for the current sample
@@ -72,19 +52,16 @@ class MP16Dataset(Dataset):
         img_id = row['IMG_ID']
         longitude = row['LON']
         latitude = row['LAT']
+        image, key = self.wds_dataset[index]
         
         # Generate textual description
         location_elements = [row[col] for col in ['neighbourhood', 'city', 'state', 'country'] 
                              if col in row and pd.notna(row[col])]
         text = 'A street view photo taken in ' + ', '.join(location_elements)
-        
-        # Load image from tar using WebDataset
-        for image, key in self.wds_dataset:
-            if key == img_id:
-                if image.mode != 'RGB':
-                    image = image.convert('RGB')
-                break
-        
+        if key in img_id and image.mode != 'RGB':
+            image = image.convert('RGB')
+        else:
+            print("Image not found")
         # Apply image transformations
         if self.vision_processor:
             image = self.vision_processor(images=image, return_tensors='pt')['pixel_values'].reshape(3, 224, 224)
@@ -92,7 +69,7 @@ class MP16Dataset(Dataset):
         return image, text, longitude, latitude
 
     def __len__(self):
-        return len(self.full_text_data_path)
+        return len(self.text_data)
 
 
 class im2gps3kDataset(VisionDataset):
