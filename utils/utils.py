@@ -43,6 +43,8 @@ class MP16Dataset(VisionDataset):
         # Initialize WebDataset for tar file
         self.wds_pipeline = (
             wds.WebDataset(self.image_data_path)
+            .split_by_node  # Split data across multiple nodes
+            .split_by_worker  # Split data among workers in each node
             .decode("pil")  # Automatically decode images to PIL
             .to_tuple("jpg", "__key__")  # Extract image and key (filename)
         )
