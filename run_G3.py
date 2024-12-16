@@ -101,7 +101,7 @@ def main():
         return sample
 
     wds_dataset = (
-        wids.ShardListDataset("data/mp-16-images.tar")
+        wds.WebDataset("data/mp-16-images.tar", resampled=True, shardshuffle=True, cache_dir="./_cache", nodesplitter=wds.split_by_node)
         .select(filter_function)
         .decode("pil")
         .to_tuple("jpg", "text", "longitude", "latitude")
