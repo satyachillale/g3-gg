@@ -109,9 +109,8 @@ def main():
     
     wds_dataset = wds_dataset.map(add_mp_metadata)
     wds_dataset = wds_dataset.map(preprocess)
-    
-    # dataset = MP16Dataset(wds_dataset, vision_processor = model.vision_processor, text_processor = model.text_processor)
-    dataloader = wds.WebLoader(wds_dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
+    wds_dataset = wds_dataset.batched(256)
+    dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
 
     params = []
     for name, param in model.named_parameters():
