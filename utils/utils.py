@@ -6,7 +6,7 @@ import tarfile
 import pickle
 from tqdm import tqdm
 from transformers import CLIPVisionModel, CLIPTextModel, CLIPTokenizer, CLIPImageProcessor, CLIPModel
-from torchvision.datasets import VisionDataset, Dataset
+from torchvision.datasets import VisionDataset
 from typing import Callable, Optional
 from torchvision.io import ImageReadMode, read_image
 from pathlib import Path
@@ -16,7 +16,7 @@ import torchvision.transforms as T
 from PIL import Image
 from io import BytesIO
 from PIL import ImageFile
-from torch.utils.data import get_worker_info
+from torch.utils.data import get_worker_info, Dataset
 ImageFile.LOAD_TRUNCATED_IMAGES = True  # Allow truncated images to be loaded
 import webdataset as wds
 
