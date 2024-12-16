@@ -1,0 +1,11 @@
+torch==2.1.1
+torchvision==0.16.1
+torchaudio==2.1.1
+webdataset
+pyproj
+pandarallel
+faiss-gpu
+transformers
+accelerate
+huggingface_hub
+pandas
