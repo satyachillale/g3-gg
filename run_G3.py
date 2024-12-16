@@ -1,4 +1,5 @@
 # changes loading model from checkpoint, unwrapping
+from importlib import metadata
 import torch
 import os
 import numpy as np
@@ -36,6 +37,44 @@ def train_1epoch(dataloader, eval_dataloader, earlystopper, model, vision_proces
             t.set_description('step {}, loss {}, lr {}'.format(i, loss.item(), scheduler.get_last_lr()[0]))
     scheduler.step()
 
+def filter_function(sample, metadata_dict):
+    key = sample["__key__"]  # The first item in sample is the key
+    filename = key.split("/")[-1]  # Extract filename from key
+    return filename in metadata_dict
+
+def preprocess(sample, model):
+    img, text, lon, lat = sample
+    # Apply vision processor
+    img = model.vision_processor(images=img, return_tensors='pt')['pixel_values'].squeeze(0)
+    # Apply text processor
+    text_inputs = model.text_processor(text=[text], padding='max_length', truncation=True, return_tensors='pt', max_length=77)
+    return img, text_inputs, lon, lat
+
+def add_mp_metadata(sample, metadata_dict):
+    key = sample['__key__']
+    filename = key.split('/')[-1]  # Extract the filename
+    if filename in metadata_dict:
+        text, lon, lat = metadata_dict[filename]
+        sample['text'] = text
+        sample['longitude'] = lon
+        sample['latitude'] = lat
+    return sample
+
+def create_mp_metadata():
+    text_data = pd.read_csv('./data/remaining_dataset.csv')
+    text_data['IMG_ID'] = text_data['IMG_ID'].apply(lambda x: x.replace('/', '_'))
+
+    # Create a dictionary mapping filename to (text, longitude, latitude)
+    metadata_dict = {}
+    for i, row in text_data.iterrows():
+        img_id = row['IMG_ID']  # After normalization: '/' replaced with '_'
+        longitude = float(row['LON'])
+        latitude = float(row['LAT'])
+        # Build location text description
+        location_elements = [row[c] for c in ['neighbourhood','city','state','country'] if pd.notna(row[c])]
+        text = 'A street view photo taken in ' + ', '.join(location_elements)
+        metadata_dict[img_id] = (text, longitude, latitude)
+        return metadata_dict
 
 def main():
     ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
@@ -55,24 +94,20 @@ def main():
     location_encoder_dict = torch.load('location_encoder.pth') # from geoclip
     model.location_encoder.load_state_dict(location_encoder_dict)
 
-    csv_path = "./data/MP16_Pro_places365.csv"
-    curated_list = set(pd.read_csv(csv_path)['IMG_ID'].str.strip())
-
-    def filter_function(sample):
-        key = sample[0]  # The first item in sample is the key
-        filename = key.split("/")[-1]  # Extract filename from key
-        return filename in curated_list
-
+    metadata_dict = create_mp_metadata()
 
     wds_dataset = (
-            wds.WebDataset("./data/mp-16-images.tar")
-            .select(filter_function)
-            .decode("pil")
-            .to_tuple("jpg", "__key__")
-        )
-    dataset = MP16Dataset(wds_dataset, vision_processor = model.vision_processor, text_processor = model.text_processor)
-    dataloader = wds.WebLoader(dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
-
+        wds.WebDataset("./data/mp-16-images.tar")
+        .select(filter_function)
+        .decode("pil")
+        .to_tuple("jpg", "text", "longitude", "latitude")
+    )
+    
+    wds_dataset = wds_dataset.map(add_mp_metadata, metadata_dict=metadata_dict)
+    wds_dataset = wds_dataset.map(preprocess, model=model)
+    
+    # dataset = MP16Dataset(wds_dataset, vision_processor = model.vision_processor, text_processor = model.text_processor)
+    dataloader = wds.WebLoader(wds_dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
 
     params = []
     for name, param in model.named_parameters():
