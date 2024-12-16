@@ -12,7 +12,6 @@ from accelerate import Accelerator, DistributedDataParallelKwargs
 import warnings
 import webdataset as wds
 import pandas as pd
-import torch.distributed as dist
 import wids
 
 warnings.filterwarnings('ignore')
@@ -100,11 +99,9 @@ def main():
             sample['longitude'] = lon
             sample['latitude'] = lat
         return sample
-    rank = dist.get_rank() if dist.is_available() and dist.is_initialized() else 0
-    world_size = dist.get_world_size() if dist.is_available() and dist.is_initialized() else 1
+
     wds_dataset = (
-        wids.ShardListDataset("data/mp-16-images.tar", rank=rank, world_size=world_size)
-        .slice(rank, world_size)
+        wids.ShardListDataset("data/mp-16-images.tar")
         .select(filter_function)
         .decode("pil")
         .to_tuple("jpg", "text", "longitude", "latitude")
