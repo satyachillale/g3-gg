@@ -39,21 +39,28 @@ class MP16Dataset(VisionDataset):
         # Convert longitude and latitude
         self.text_data['LON'] = self.text_data['LON'].astype(float)
         self.text_data['LAT'] = self.text_data['LAT'].astype(float)
-        
-        # Initialize WebDataset for tar file
-        self.wds_pipeline = (
-            wds.WebDataset(self.image_data_path)
-            .split_by_node  # Split data across multiple nodes
-            .split_by_worker  # Split data among workers in each node
-            .decode("pil")  # Automatically decode images to PIL
-            .to_tuple("jpg", "__key__")  # Extract image and key (filename)
-        )
 
         # Image transformations
         self.transform = T.Compose([
             T.Resize((512, 512)),
             T.ToTensor()
         ])
+
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            world_size = torch.distributed.get_world_size()
+            rank = torch.distributed.get_rank()
+        else:
+            world_size = 1
+            rank = 0
+        print(f"World Size: {world_size}, Rank: {rank}")
+
+        # Initialize WebDataset for tar file
+        self.wds_pipeline = (
+            wds.WebDataset(self.image_data_path)
+            .shardfilter(rank, world_size)
+            .decode("pil")  # Automatically decode images to PIL
+            .to_tuple("jpg", "__key__")  # Extract image and key (filename)
+        )
         
         # Optional: Add vision_processor
         self.vision_processor = vision_processor
@@ -70,6 +77,7 @@ class MP16Dataset(VisionDataset):
             T.GaussianBlur(kernel_size=9),
             T.ToTensor()
         ])
+
     def caption_generation(self, row):
         pass
 
