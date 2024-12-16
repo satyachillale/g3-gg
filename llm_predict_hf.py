@@ -5,13 +5,15 @@ import re
 import pandas as pd
 import numpy as np
 import ast
+from pandarallel import pandarallel
 from tqdm import tqdm
 import json
 import time
 import argparse
+from retrying import retry
 from PIL import Image
 import torch
-from transformers import AutoModelForVision2Seq, LlavaNextProcessor, LlavaNextForConditionalGeneration
+from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 import datetime
 
 def encode_image(image_path):
@@ -20,13 +22,18 @@ def encode_image(image_path):
 
 def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, n=10):
     image = Image.open(image_path)
-    # Set the default chat template
-    processor.chat_template = """{% for message in messages %}{% if message['role'] == 'user' %}{{ '<|user|>\n' + message['content'] + '\n' }}{% elif message['role'] == 'assistant' %}{{ '<|assistant|>\n' + message['content'] + '\n' }}{% elif message['role'] == 'system' %}{{ '<|system|>\n' + message['content'] + '\n' }}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '<|assistant|>\n' }}{% endif %}"""
-
     conversation = [
         {
-            "role": "user",
-            "content": "Suppose you are an expert in geo-localization, you have the ability to give two number GPS coordination given an image. Please give me the location of the given image. Remember, you must have an answer, just output your best guess, don't answer me that you can't give a location. Your answer should be in the following JSON format without any other information: {'latitude': float,'longitude': float}. Your answer should be in the following JSON format without any other information: {'latitude': float,'longitude': float}.",
+
+        "role": "user",
+        "content": [
+            {"type": "text", "text": '''Suppose you are an expert in geo-localization, you have the ability to give two number GPS coordination given an image.
+            Please give me the location of the given image.
+            Remember, you must have an answer, just output your best guess, don't answer me that you can't give a location.
+            Your answer should be in the following JSON format without any other information: {"latitude": float,"longitude": float}.
+            Your answer should be in the following JSON format without any other information: {"latitude": float,"longitude": float}.'''},
+            {"type": "image"},
+            ],
         },
     ]
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
@@ -34,33 +41,36 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
     ans = []
     dialogue = processor.batch_decode(output, skip_special_tokens=True)
-    for i in range(len(dialogue)):
+    for i in range(n):
         assistant_reply = dialogue[i].split("assistant")[-1].strip()
         ans.append(assistant_reply)
     return ans
 
 def get_response_rag(image_path, model, processor, candidates_gps, reverse_gps, max_tokens=200, temperature=0.7, n=10):
     image = Image.open(image_path)
-    # Set the default chat template
-    processor.chat_template = """{% for message in messages %}{% if message['role'] == 'user' %}{{ '<|user|>\n' + message['content'] + '\n' }}{% elif message['role'] == 'assistant' %}{{ '<|assistant|>\n' + message['content'] + '\n' }}{% elif message['role'] == 'system' %}{{ '<|system|>\n' + message['content'] + '\n' }}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '<|assistant|>\n' }}{% endif %}"""
-
     conversation = [
         {
-            "role": "user",
-            "content": f"""Suppose you are an expert in geo-localization, Please analyze this image and give me a guess of the location.
+
+        "role": "user",
+        "content": [
+            {"type": "text", "text": f"""Suppose you are an expert in geo-localization, Please analyze this image and give me a guess of the location.
                 Your answer must be to the coordinates level in (latitude, longitude) format.
                 For your reference, these are coordinates of some similar images: {candidates_gps}, and these are coordinates of some dissimilar images: {reverse_gps}.
                 Remember, you must have an answer, just output your best guess, don't answer me that you can't give an location.
                 Your answer should be in the following JSON format without any other information: {{"latitude": float,"longitude": float}}.
-                Your answer should be in the following JSON format without any other information: {{"latitude": float,"longitude": float}}.""",
+                Your answer should be in the following JSON format without any other information: {{"latitude": float,"longitude": float}}.
+                """},
+            {"type": "image"},
+            ],
         },
     ]
+
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
     inputs = processor(prompt, image, return_tensors="pt").to(model.device)
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
     ans = []
     dialogue = processor.batch_decode(output, skip_special_tokens=True)
-    for i in range(len(dialogue)):
+    for i in range(n):
         assistant_reply = dialogue[i].split("assistant")[-1].strip()
         ans.append(assistant_reply)
     return ans
@@ -157,7 +167,6 @@ def run(args):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-   # model_path = "./llava-next-8b-llama3"
     model_path = "lmms-lab/llama3-llava-next-8b"
     root_path = "./data/im2gps3k"
     text_path = "im2gps3k_places365.csv"
@@ -169,7 +178,7 @@ if __name__ == '__main__':
     searching_file_name = 'I_g3_im2gps3k'
 
     processor = LlavaNextProcessor.from_pretrained(model_path)
-    model = AutoModelForVision2Seq.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+    model = LlavaNextForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
 
     # pandarallel.initialize(progress_bar=True, nb_workers=4)
     args.add_argument('--root_path', type=str, default=root_path)
