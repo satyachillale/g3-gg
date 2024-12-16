@@ -23,7 +23,7 @@ import webdataset as wds
 class MP16Dataset(VisionDataset):
 
     def __init__(self, root_path='./data/', text_data_path='remaining_dataset.csv', image_data_path='mp-16-images.tar', vision_processor=None,text_processor=None):
-        super().__init__()
+        super().__init__(self)
 
         # Initialize paths and metadata
         self.root_path = root_path
