@@ -52,8 +52,12 @@ def main():
         print(f"File does not exist. Skipping model load.")
     location_encoder_dict = torch.load('location_encoder.pth') # from geoclip
     model.location_encoder.load_state_dict(location_encoder_dict)
-
-    dataset = MP16Dataset(vision_processor = model.vision_processor, text_processor = model.text_processor)
+    wds_dataset = (
+            wds.WebDataset("./data/mp-16-images.tar").with_options(splitter=wds.shardlists.split_by_worker)
+            .decode("pil")
+            .to_tuple("jpg", "__key__")
+        )
+    dataset = MP16Dataset(wds_dataset, vision_processor = model.vision_processor, text_processor = model.text_processor)
     dataloader = wds.WebLoader(dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
 
 

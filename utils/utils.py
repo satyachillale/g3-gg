@@ -22,7 +22,7 @@ import webdataset as wds
 
 class MP16Dataset(Dataset):
 
-    def __init__(self, root_path='./data/', text_data_path='remaining_dataset.csv', image_data_path='mp-16-images.tar', vision_processor=None,text_processor=None):
+    def __init__(self, wds_dataset, root_path='./data/', full_text_data_path='MP16_Pro_places365.csv', text_data_path='remaining_dataset.csv', image_data_path='mp-16-images.tar', vision_processor=None,text_processor=None):
         super().__init__()
 
         # Initialize paths and metadata
@@ -30,7 +30,7 @@ class MP16Dataset(Dataset):
         self.text_data_path = os.path.join(root_path, text_data_path)
         self.image_data_path = os.path.join(root_path, image_data_path)
         self.text_data = pd.read_csv(self.text_data_path)
-
+        self.full_text_data_path = os.path.join(root_path, full_text_data_path)
         # Preprocess text data
         self.text_data['IMG_ID'] = self.text_data['IMG_ID'].apply(lambda x: x.replace('/', '_'))
         self.text_data = self.text_data[self.text_data['country'].notnull()]
@@ -40,34 +40,28 @@ class MP16Dataset(Dataset):
         self.text_data['LON'] = self.text_data['LON'].astype(float)
         self.text_data['LAT'] = self.text_data['LAT'].astype(float)
 
-        # Image transformations
-        self.transform = T.Compose([
-            T.Resize((512, 512)),
-            T.ToTensor()
-        ])
-
-        # Initialize WebDataset for tar file
-        self.wds_pipeline = (
-            wds.WebDataset(self.image_data_path)
-            .decode("pil")  # Automatically decode images to PIL
-            .to_tuple("jpg", "__key__")  # Extract image and key (filename)
-        )
         
         # Optional: Add vision_processor
         self.vision_processor = vision_processor
         self.text_processor = text_processor
-        
+        self.wds_dataset = wds_dataset
+        # Image transformations
+        # self.transform = T.Compose([
+        #     T.Resize((512, 512)),
+        #     T.ToTensor()
+        # ])
+
         # Define contrast transforms (for augmentations)
-        self.contrast_transforms = T.Compose([
-            T.RandomHorizontalFlip(),
-            T.RandomResizedCrop(size=224),
-            T.RandomApply([
-                T.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)
-            ], p=0.8),
-            T.RandomGrayscale(p=0.2),
-            T.GaussianBlur(kernel_size=9),
-            T.ToTensor()
-        ])
+        # self.contrast_transforms = T.Compose([
+        #     T.RandomHorizontalFlip(),
+        #     T.RandomResizedCrop(size=224),
+        #     T.RandomApply([
+        #         T.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)
+        #     ], p=0.8),
+        #     T.RandomGrayscale(p=0.2),
+        #     T.GaussianBlur(kernel_size=9),
+        #     T.ToTensor()
+        # ])
 
     def caption_generation(self, row):
         pass
@@ -85,7 +79,7 @@ class MP16Dataset(Dataset):
         text = 'A street view photo taken in ' + ', '.join(location_elements)
         
         # Load image from tar using WebDataset
-        for image, key in self.wds_pipeline:
+        for image, key in self.wds_dataset:
             if key == img_id:
                 if image.mode != 'RGB':
                     image = image.convert('RGB')
@@ -98,7 +92,7 @@ class MP16Dataset(Dataset):
         return image, text, longitude, latitude
 
     def __len__(self):
-        return len(self.text_data)
+        return len(self.full_text_data_path)
 
 
 class im2gps3kDataset(VisionDataset):
