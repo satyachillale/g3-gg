@@ -43,6 +43,7 @@ def filter_function(sample, metadata_dict):
     return filename in metadata_dict
 
 def preprocess(sample, model):
+    print("Preprocessing")
     img, text, lon, lat = sample
     # Apply vision processor
     img = model.vision_processor(images=img, return_tensors='pt')['pixel_values'].squeeze(0)
@@ -52,6 +53,7 @@ def preprocess(sample, model):
 
 def add_mp_metadata(sample, metadata_dict):
     key = sample['__key__']
+    print(key)
     filename = key.split('/')[-1]  # Extract the filename
     if filename in metadata_dict:
         text, lon, lat = metadata_dict[filename]
@@ -68,6 +70,7 @@ def create_mp_metadata():
     metadata_dict = {}
     for i, row in text_data.iterrows():
         img_id = row['IMG_ID']  # After normalization: '/' replaced with '_'
+        print(img_id)
         longitude = float(row['LON'])
         latitude = float(row['LAT'])
         # Build location text description
