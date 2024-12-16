@@ -57,7 +57,7 @@ class MP16Dataset(VisionDataset):
         # Initialize WebDataset for tar file
         self.wds_pipeline = (
             wds.WebDataset(self.image_data_path)
-            .shardfilter(rank, world_size)
+            .shard(rank, world_size)
             .decode("pil")  # Automatically decode images to PIL
             .to_tuple("jpg", "__key__")  # Extract image and key (filename)
         )
