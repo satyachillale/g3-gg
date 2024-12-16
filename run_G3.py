@@ -75,7 +75,7 @@ def main():
 
     metadata_dict = create_mp_metadata()
 
-    def filter_function(sample, metadata_dict):
+    def filter_function(sample):
         key = sample["__key__"]  # The first item in sample is the key
         filename = key.split("/")[-1]  # Extract filename from key
         return filename in metadata_dict
@@ -101,7 +101,7 @@ def main():
         return sample
 
     wds_dataset = (
-        wds.WebDataset("data/mp-16-images.tar", resampled=True, shardshuffle=True, cache_dir="./_cache", nodesplitter=wds.split_by_node)
+        wds.WebDataset("data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
         .select(filter_function)
         .decode("pil")
         .to_tuple("jpg", "text", "longitude", "latitude")
