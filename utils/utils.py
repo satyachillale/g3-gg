@@ -6,7 +6,7 @@ import tarfile
 import pickle
 from tqdm import tqdm
 from transformers import CLIPVisionModel, CLIPTextModel, CLIPTokenizer, CLIPImageProcessor, CLIPModel
-from torchvision.datasets import VisionDataset
+from torchvision.datasets import VisionDataset, Dataset
 from typing import Callable, Optional
 from torchvision.io import ImageReadMode, read_image
 from pathlib import Path
@@ -20,7 +20,7 @@ from torch.utils.data import get_worker_info
 ImageFile.LOAD_TRUNCATED_IMAGES = True  # Allow truncated images to be loaded
 import webdataset as wds
 
-class MP16Dataset(VisionDataset):
+class MP16Dataset(Dataset):
 
     def __init__(self, root_path='./data/', text_data_path='remaining_dataset.csv', image_data_path='mp-16-images.tar', vision_processor=None,text_processor=None):
         super().__init__(self)
@@ -46,18 +46,9 @@ class MP16Dataset(VisionDataset):
             T.ToTensor()
         ])
 
-        if torch.distributed.is_available() and torch.distributed.is_initialized():
-            world_size = torch.distributed.get_world_size()
-            rank = torch.distributed.get_rank()
-        else:
-            world_size = 1
-            rank = 0
-        print(f"World Size: {world_size}, Rank: {rank}")
-
         # Initialize WebDataset for tar file
         self.wds_pipeline = (
             wds.WebDataset(self.image_data_path)
-            .shard(rank, world_size)
             .decode("pil")  # Automatically decode images to PIL
             .to_tuple("jpg", "__key__")  # Extract image and key (filename)
         )

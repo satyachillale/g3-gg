@@ -9,6 +9,7 @@ from utils.utils import MP16Dataset
 from utils.G3 import G3
 from accelerate import Accelerator, DistributedDataParallelKwargs
 import warnings
+import webdataset as wds
 
 warnings.filterwarnings('ignore')
 
@@ -53,7 +54,7 @@ def main():
     model.location_encoder.load_state_dict(location_encoder_dict)
 
     dataset = MP16Dataset(vision_processor = model.vision_processor, text_processor = model.text_processor)
-    dataloader = DataLoader(dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
+    dataloader = wds.WebLoader(dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
 
 
     params = []
