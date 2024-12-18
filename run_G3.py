@@ -110,6 +110,7 @@ def main():
 
     wds_dataset = (
         wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True)
+        .to_tuple("jpg", "__key__")
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
