@@ -13,7 +13,7 @@ import warnings
 import webdataset as wds
 import pandas as pd
 import wids
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import io
 
 warnings.filterwarnings('ignore')
@@ -74,9 +74,9 @@ def main():
         print(f"File does not exist. Skipping model load.")
     location_encoder_dict = torch.load('location_encoder.pth') # from geoclip
     model.location_encoder.load_state_dict(location_encoder_dict)
-    
     vp = model.vision_processor
     tp = model.text_processor
+
     metadata_dict = create_mp_metadata()
    
     print('metadata_dict_len: ', len(metadata_dict))
@@ -84,12 +84,18 @@ def main():
         key = sample["__key__"]
         filename = key.split("/")[-1] + ".jpg"
         return filename in metadata_dict
-
+    
+    def filter_function_2(sample):
+        return sample['img'] is not None
+    
     def preprocess(sample):
         img = sample['jpg']
-        img = Image.open(io.BytesIO(img)).convert("RGB")
-        img = vp(images=img, return_tensors='pt')['pixel_values'].reshape(3,224,224)
-        sample['img'] = img
+        try:
+            img = Image.open(io.BytesIO(img)).convert("RGB")
+            img = vp(images=img, return_tensors='pt')['pixel_values'].reshape(3,224,224)
+            sample['img'] = img
+        except UnidentifiedImageError:
+            sample['img'] = None
         return sample
 
     def add_mp_metadata(sample):
@@ -102,36 +108,16 @@ def main():
             sample['latitude'] = lat
         return sample
 
-    def safe_pil_decode(key, data):
-        try:
-            img = Image.open(io.BytesIO(data)).convert("RGB")
-            return img
-        except UnidentifiedImageError:
-            return None
-
     wds_dataset = (
         wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
+        .select(filter_function_2)
         .to_tuple("img", "text", "longitude", "latitude")
         .batched(256)
     )
-    # wds_dataset = (
-    #     wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
-    #     .decode(safe_pil_decode)
-    #     .select(lambda sample: sample is not None)  # Skip None samples
-    #     .select(filter_function)
-    #     .map(add_mp_metadata)
-    #     .map(preprocess)
-    #     .to_tuple("img", "text", "longitude", "latitude")
-    #     .batched(256)
-    # )
 
-    
-    #wds_dataset = wds_dataset.map(add_mp_metadata)
-    #wds_dataset = wds_dataset.map(preprocess)
-    #wds_dataset = wds_dataset.batched(256)
     dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
 
     params = []
