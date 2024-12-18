@@ -129,9 +129,9 @@ def main():
     optimizer = torch.optim.AdamW([param for name,param in model.named_parameters() if param.requires_grad], lr=3e-5, weight_decay=1e-6)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.87)
 
-    model, optimizer, dataloader, scheduler = accelerator.prepare(
-        model, optimizer, dataloader, scheduler
-    )
+    # model, optimizer, dataloader, scheduler = accelerator.prepare(
+    #     model, optimizer, dataloader, scheduler
+    # )
 
    # unwrapped_model = accelerator.unwrap_model(model)
    # vision_processor = unwrapped_model.vision_processor
