@@ -16,6 +16,7 @@ import wids
 from PIL import Image, UnidentifiedImageError
 import io
 
+failed_image_count = 0
 warnings.filterwarnings('ignore')
 
 def train_1epoch(dataloader, eval_dataloader, earlystopper, model, vision_processor, text_processor, optimizer, scheduler, device, accelerator=None):
@@ -95,6 +96,7 @@ def main():
             img = vp(images=img, return_tensors='pt')['pixel_values'].reshape(3,224,224)
             sample['img'] = img
         except UnidentifiedImageError:
+            failed_image_count += 1
             sample['img'] = None
         return sample
 
