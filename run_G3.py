@@ -81,8 +81,7 @@ def main():
     print('metadata_dict_len: ', len(metadata_dict))
     def filter_function(sample):
         key = sample["__key__"]
-        filename = key.split("/")[-1]
-        print("fn" + filename)
+        filename = key.split("/")[-1] + ".jpg"
         return filename in metadata_dict
 
     def preprocess(sample):
