@@ -118,6 +118,11 @@ def main():
         .batched(256)
     )
 
+    for sample in wds_dataset:
+        print(f"Sample batch: {len(sample)}")
+        print(f"Image shape: {sample[0][0].shape}, Text: {sample[1][0]}, Lon: {sample[2][0]}, Lat: {sample[3][0]}")
+        break
+
     dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=6, pin_memory=True, prefetch_factor=5)
 
     params = []
@@ -129,13 +134,9 @@ def main():
     optimizer = torch.optim.AdamW([param for name,param in model.named_parameters() if param.requires_grad], lr=3e-5, weight_decay=1e-6)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.87)
 
-    # model, optimizer, dataloader, scheduler = accelerator.prepare(
-    #     model, optimizer, dataloader, scheduler
-    # )
-
-   # unwrapped_model = accelerator.unwrap_model(model)
-   # vision_processor = unwrapped_model.vision_processor
-   # text_processor = unwrapped_model.text_processor
+    model, optimizer, dataloader, scheduler = accelerator.prepare(
+        model, optimizer, dataloader, scheduler
+    )
 
     eval_dataloader = None
     earlystopper = None
