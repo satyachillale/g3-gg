@@ -14,6 +14,7 @@ import webdataset as wds
 import pandas as pd
 import wids
 from PIL import Image
+import io
 
 warnings.filterwarnings('ignore')
 
@@ -87,7 +88,7 @@ def main():
     def preprocess(sample):
         img = sample['jpg']
         img = Image.open(io.BytesIO(img)).convert("RGB")
-        img = vp(images=img, return_tensors='pt')['pixel_values'].squeeze(0)
+        img = vp(images=img, return_tensors='pt')['pixel_values'].reshape(3,224,224)
         sample['img'] = img
         return sample
 
@@ -100,9 +101,6 @@ def main():
             sample['longitude'] = lon
             sample['latitude'] = lat
         return sample
-    
-    from PIL import Image, UnidentifiedImageError
-    import io
 
     def safe_pil_decode(key, data):
         try:
@@ -113,7 +111,6 @@ def main():
 
     wds_dataset = (
         wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
-        .decode('pil')
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
