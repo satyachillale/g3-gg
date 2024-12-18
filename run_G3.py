@@ -16,22 +16,21 @@ import wids
 from PIL import Image, UnidentifiedImageError
 import io
 
-failed_image_count = 0
 warnings.filterwarnings('ignore')
 
 def train_1epoch(dataloader, eval_dataloader, earlystopper, model, vision_processor, text_processor, optimizer, scheduler, device, accelerator=None):
     model.train()
     t = tqdm(dataloader, disable=not accelerator.is_local_main_process)
     for i, data in enumerate(t):
-        images, texts, latitude, longitude = data
+        images, texts, longitudes, latitudes = data
         texts = text_processor(text=texts, padding='max_length', truncation=True, return_tensors='pt', max_length=77)
         images = images.to(device)
         texts = texts.to(device)
-        longitude = longitude.to(device).float()
-        latitude = latitude.to(device).float()
+        longitudes = longitudes.to(device).float()
+        latitudes = latitudes.to(device).float()
         optimizer.zero_grad()
 
-        output = model(images, texts, longitude, latitude, return_loss=True)
+        output = model(images, texts, longitudes, latitudes, return_loss=True)
         loss = output['loss']
 
         # loss.backward()
@@ -61,7 +60,7 @@ def create_mp_metadata():
 def main():
     ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
     accelerator = Accelerator(kwargs_handlers=[ddp_kwargs])
-
+    failed_image_count = 0
     # fine-tune
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = 'cpu'
@@ -96,7 +95,6 @@ def main():
             img = vp(images=img, return_tensors='pt')['pixel_values'].reshape(3,224,224)
             sample['img'] = img
         except UnidentifiedImageError:
-            failed_image_count += 1
             sample['img'] = None
         return sample
 
@@ -112,7 +110,6 @@ def main():
 
     wds_dataset = (
         wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True)
-        .to_tuple("jpg", "__key__")
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
@@ -121,12 +118,7 @@ def main():
         .batched(256)
     )
 
-    for sample in wds_dataset:
-        print(f"Sample batch: {len(sample)}")
-        print(f"Image shape: {sample[0][0].shape}, Text: {sample[1][0]}, Lon: {sample[2][0]}, Lat: {sample[3][0]}")
-        break
-
-    dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=6, pin_memory=True, prefetch_factor=5)
+    dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
 
     params = []
     for name, param in model.named_parameters():

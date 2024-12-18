@@ -170,8 +170,8 @@ if __name__ == '__main__':
     model_path = "lmms-lab/llama3-llava-next-8b"
     root_path = "./data/im2gps3k"
     text_path = "im2gps3k_places365.csv"
-    image_path = "images"
-    result_path = "llm_predict_results_zs_llava.csv"
+    image_path = "images_new2"
+    result_path = "llm_predict_results_zs_llava_1.csv"
     rag_path = "llm_predict_results_rag_llava.csv"
     process = 'predict' # predict, extract, rag, rag_extract, select, selected_extract
     rag_sample_num = 5
