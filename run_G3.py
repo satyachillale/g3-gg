@@ -88,27 +88,9 @@ def main():
         return filename in metadata_dict
 
     def preprocess(sample):
-
-        #img, text, lon, lat = sample
         img = sample['jpg']
-        # Apply vision processor
-        # Handle both PIL Image and bytes
-        if isinstance(img, bytes):
-            try:
-                img = Image.open(io.BytesIO(img)).convert("RGB")
-            except UnidentifiedImageError:
-                print("udI:" + sample["__key__"])
-                return None
-            except Exception as e:
-                print("ex:" + sample["__key__"])
-                return None
-
-        elif not isinstance(img, Image.Image):  # If image is not PIL Image
-            return None
+        img = Image.open(io.BytesIO(img)).convert("RGB")
         img = vp(images=img, return_tensors='pt')['pixel_values'].squeeze(0)
-        
-        # Apply text processor
-        #text_inputs = tp(text=[text], padding='max_length', truncation=True, return_tensors='pt', max_length=77)
         sample['img'] = img
         return sample
 
@@ -143,14 +125,23 @@ def main():
    # )
     wds_dataset = (
         wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
-        .decode(safe_pil_decode)
-        .select(lambda sample: sample is not None)  # Skip None samples
+        .decode('pil')
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
         .to_tuple("img", "text", "longitude", "latitude")
         .batched(256)
     )
+    # wds_dataset = (
+    #     wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
+    #     .decode(safe_pil_decode)
+    #     .select(lambda sample: sample is not None)  # Skip None samples
+    #     .select(filter_function)
+    #     .map(add_mp_metadata)
+    #     .map(preprocess)
+    #     .to_tuple("img", "text", "longitude", "latitude")
+    #     .batched(256)
+    # )
 
     
     #wds_dataset = wds_dataset.map(add_mp_metadata)
