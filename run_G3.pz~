@@ -97,10 +97,8 @@ def main():
             try:
                 img = Image.open(io.BytesIO(img)).convert("RGB")
             except UnidentifiedImageError:
-                print("udI:" + sample["__key__"])
                 return None
             except Exception as e:
-                print("ex:" + sample["__key__"])
                 return None
 
         elif not isinstance(img, Image.Image):  # If image is not PIL Image
