@@ -109,7 +109,7 @@ def main():
         return sample
 
     wds_dataset = (
-        wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
+        wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True)
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
@@ -118,7 +118,7 @@ def main():
         .batched(256)
     )
 
-    dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
+    dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=6, pin_memory=True, prefetch_factor=5)
 
     params = []
     for name, param in model.named_parameters():

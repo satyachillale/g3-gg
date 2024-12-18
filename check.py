@@ -3,7 +3,7 @@ import pandas as pd
 # Read CSV into a DataFrame
 df = pd.read_csv('/Users/satyachillale/Downloads/datasets_new/remaining_dataset.csv')
 all_jpg = df['IMG_ID'].apply(lambda x: isinstance(x, str) and x.endswith('.jpg')).all()
-
+print(df['neighbourhood'].unique().shape)
 # Print result
 if all_jpg:
     print("All files in the 'IMG_ID' column end with .jpg.")
