@@ -47,15 +47,12 @@ def create_mp_metadata():
     # Create a dictionary mapping filename to (text, longitude, latitude)
     metadata_dict = {}
     for i, row in text_data.iterrows():
-        img_id = row['IMG_ID']  # After normalization: '/' replaced with '_'
+        img_id = row['IMG_ID']
         longitude = float(row['LON'])
         latitude = float(row['LAT'])
-
-
         # Build location text description
         location_elements = [row[c] for c in ['neighbourhood','city','state','country'] if pd.notna(row[c])]
         text = 'A street view photo taken in ' + ', '.join(location_elements)
-        #text = bytes(text, 'utf-8')
         metadata_dict[img_id] = (text, longitude, latitude)
     return metadata_dict
 
@@ -83,8 +80,9 @@ def main():
    
     print('metadata_dict_len: ', len(metadata_dict))
     def filter_function(sample):
-        key = sample["__key__"]  # The first item in sample is the key
-        filename = key.split("/")[-1] + '.jpg'  # Extract filename from key
+        key = sample["__key__"]
+        filename = key.split("/")[-1]
+        print("fn" + filename)
         return filename in metadata_dict
 
     def preprocess(sample):
@@ -114,15 +112,6 @@ def main():
         except UnidentifiedImageError:
             return None
 
-   # wds_dataset = (
-   #     wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
-   #     .select(filter_function)
-   #     .map(add_mp_metadata)
-   #     .to_tuple("jpg", "text", "longitude", "latitude")
-   #     .decode("pil")
-   #     .map(preprocess)
-   #     .to_tuple("img", "text", "longitude", "latitude")
-   # )
     wds_dataset = (
         wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
         .decode('pil')
