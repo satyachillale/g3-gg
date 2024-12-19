@@ -66,12 +66,14 @@ def main():
     # device = 'cpu'
     file_path = './checkpoints/g3.pth'
     model = G3(device).to(device)
-    if os.path.exists(file_path):
-        state_dict = torch.load(file_path, map_location=device)
-        model.load_state_dict(state_dict)
-        print("Model state loaded successfully.")
-    else:
-        print(f"File does not exist. Skipping model load.")
+    if accelerator.is_local_main_process:
+        if os.path.exists(file_path):
+            state_dict = torch.load(file_path, map_location=device)
+            model.load_state_dict(state_dict)
+            print("Model state loaded successfully.")
+        else:
+            print(f"File does not exist. Skipping model load.")
+    accelerator.wait_for_everyone()
     location_encoder_dict = torch.load('location_encoder.pth') # from geoclip
     model.location_encoder.load_state_dict(location_encoder_dict)
     vp = model.vision_processor
@@ -136,8 +138,9 @@ def main():
     earlystopper = None
     for epoch in range(10):
         train_1epoch(dataloader, eval_dataloader, earlystopper, model, vp, tp, optimizer, scheduler, device, accelerator)
-        unwrapped_model = accelerator.unwrap_model(model)
-        torch.save(unwrapped_model.state_dict(), './checkpoints/g3.pth')
+        if accelerator.is_local_main_process:
+            unwrapped_model = accelerator.unwrap_model(model)
+            torch.save(unwrapped_model.state_dict(), './checkpoints/g3.pth')
 
 if __name__ == '__main__':
     main()
