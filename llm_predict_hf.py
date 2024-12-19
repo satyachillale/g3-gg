@@ -36,7 +36,7 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
             ],
         },
     ]
-    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+    prompt = processor.tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
     inputs = processor(prompt, image, return_tensors="pt").to(model.device)
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
     ans = []
