@@ -13,7 +13,7 @@ import argparse
 from retrying import retry
 from PIL import Image
 import torch
-from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
+from transformers import LlavaNextProcessor, AutoModelForVision2Seq
 import datetime
 
 def encode_image(image_path):
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     """
     processor = LlavaNextProcessor.from_pretrained(model_path)
     processor.tokenizer.chat_template = chat_template
-    model = LlavaNextForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
+    model = AutoModelForVision2Seq.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
 
     # pandarallel.initialize(progress_bar=True, nb_workers=4)
     args.add_argument('--root_path', type=str, default=root_path)
