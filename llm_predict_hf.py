@@ -170,14 +170,23 @@ if __name__ == '__main__':
     model_path = "lmms-lab/llama3-llava-next-8b"
     root_path = "./data/im2gps3k"
     text_path = "im2gps3k_places365.csv"
-    image_path = "images"
-    result_path = "llm_predict_results_zs_llava.csv"
+    image_path = "images_new2"
+    result_path = "llm_predict_results_zs_llava_1.csv"
     rag_path = "llm_predict_results_rag_llava.csv"
     process = 'predict' # predict, extract, rag, rag_extract, select, selected_extract
     rag_sample_num = 5
     searching_file_name = 'I_g3_im2gps3k'
 
+    chat_template = """
+    <|system|>
+    {system_message}
+    <|user|>
+    {user_message}
+    <|image|>
+    {image_data}
+    """
     processor = LlavaNextProcessor.from_pretrained(model_path)
+    processor.tokenizer.chat_template = chat_template
     model = LlavaNextForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
 
     # pandarallel.initialize(progress_bar=True, nb_workers=4)
