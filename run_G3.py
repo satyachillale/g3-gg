@@ -109,7 +109,7 @@ def main():
         return sample
 
     wds_dataset = (
-        wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True)
+        wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
