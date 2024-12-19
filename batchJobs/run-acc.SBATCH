@@ -16,7 +16,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --cpus-per-task=24
 
-#SBATCH --time=10:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=cvproject_%j.out
 #SBATCH --error=cvproject_%j.err
 #SBATCH --exclusive
