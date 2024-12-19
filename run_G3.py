@@ -108,17 +108,16 @@ def main():
             sample['latitude'] = lat
         return sample
 
-    wds_dataset = (
-         wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
+    wds_dataset = wds.WebDataset("./data/mp-16-images.tar", resampled=True, shardshuffle=True, nodesplitter=wds.split_by_node)
+    wds_dataset = (wds_dataset    
         .select(filter_function)
         .map(add_mp_metadata)
         .map(preprocess)
         .select(filter_function_2)
         .to_tuple("img", "text", "longitude", "latitude")
-        .batched(256)
     )
 
-    dataloader = wds.WebLoader(wds_dataset, batch_size=None, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=5)
+    dataloader = wds.WebLoader(wds_dataset, batch_size=512, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=3)
 
     params = []
     for name, param in model.named_parameters():

@@ -157,7 +157,7 @@ def run(args):
             df_rerun = df_rerun.progress_apply(lambda row: process_row_rag(row, model, processor, root_path, image_path, rag_sample_num), axis=1)
             df.update(df_rerun)
             df.to_csv(os.path.join(root_path,  str(rag_sample_num) + '_' + rag_path), index=False)
-            
+
     if process == 'rag_extract':
         df = pd.read_csv(os.path.join(root_path, rag_path)).fillna("None")
         pattern = r'[-+]?\d+\.\d+'
@@ -167,11 +167,11 @@ def run(args):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-    model_path = "./llava-next-8b-llama3"
+    model_path = "lmms-lab/llama3-llava-next-8b"
     root_path = "./data/im2gps3k"
     text_path = "im2gps3k_places365.csv"
-    image_path = "images"
-    result_path = "llm_predict_results_zs_llava.csv"
+    image_path = "images_new2"
+    result_path = "llm_predict_results_zs_llava_2.csv"
     rag_path = "llm_predict_results_rag_llava.csv"
     process = 'predict' # predict, extract, rag, rag_extract, select, selected_extract
     rag_sample_num = 5
