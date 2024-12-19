@@ -177,7 +177,16 @@ if __name__ == '__main__':
     rag_sample_num = 5
     searching_file_name = 'I_g3_im2gps3k'
 
+    chat_template = """
+    <|system|>
+    {system_message}
+    <|user|>
+    {user_message}
+    <|image|>
+    {image_data}
+    """
     processor = LlavaNextProcessor.from_pretrained(model_path)
+    processor.tokenizer.chat_template = chat_template
     model = LlavaNextForConditionalGeneration.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
 
     # pandarallel.initialize(progress_bar=True, nb_workers=4)
