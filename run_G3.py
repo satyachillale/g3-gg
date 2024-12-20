@@ -38,6 +38,9 @@ def train_1epoch(dataloader, eval_dataloader, earlystopper, model, vision_proces
         optimizer.step()
         if i % 1 == 0:
             t.set_description('step {}, loss {}, lr {}'.format(i, loss.item(), scheduler.get_last_lr()[0]))
+        if i % 2000 == 0 and accelerator.is_local_main_process:
+            unwrapped_model = accelerator.unwrap_model(model)
+            torch.save(unwrapped_model.state_dict(), './checkpoints/g3.pth')
     scheduler.step()
 
 def create_mp_metadata():
@@ -119,7 +122,7 @@ def main():
         .to_tuple("img", "text", "longitude", "latitude")
     )
 
-    dataloader = wds.WebLoader(wds_dataset, batch_size=512, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=3)
+    dataloader = wds.WebLoader(wds_dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=2)
 
     params = []
     for name, param in model.named_parameters():
@@ -140,6 +143,7 @@ def main():
         train_1epoch(dataloader, eval_dataloader, earlystopper, model, vp, tp, optimizer, scheduler, device, accelerator)
         if accelerator.is_local_main_process:
             unwrapped_model = accelerator.unwrap_model(model)
+            print("epoch: " + str(epoch))
             torch.save(unwrapped_model.state_dict(), './checkpoints/g3.pth')
 
 if __name__ == '__main__':

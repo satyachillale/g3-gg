@@ -13,7 +13,7 @@ import argparse
 from retrying import retry
 from PIL import Image
 import torch
-from transformers import LlavaForConditionalGeneration, AutoModelForVision2Seq, AutoProcessor, AutoModelForCausalLM
+from transformers import AutoModelForImageTextToText, BitsAndBytesConfig, LlavaNextProcessor, LlavaNextForConditionalGeneration
 import datetime
 
 def encode_image(image_path):
@@ -21,7 +21,6 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, n=10):
-    print("image path:" + image_path)
     image = Image.open(image_path)
     conversation = [
         {
@@ -30,9 +29,8 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
         "content": [
             {"type": "text", "text": '''Suppose you are an expert in geo-localization, you have the ability to give two number GPS coordination given an image.
             Please give me the location of the given image.
-            Remember, you must have an answer, just output your best guess, don't answer me that you can't give a location.
-            Your answer should be in the following JSON format without any other information: {"latitude": float,"longitude": float}.
-            Your answer should be in the following JSON format without any other information: {"latitude": float,"longitude": float}.'''},
+            Remember, you must have an answer, just output your best guess, don't answer me that you can't give a location. NO OTHER REPLY. 
+            Your answer should be in the following format without any other information: location:{"latitude": float, "longitude": float}. Follow the format perfectly. If you can't just give the following reply  location:{"latitude": 0.0, "longitude": 0.0}'''},
             {"type": "image"},
             ],
         },
@@ -40,13 +38,17 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
     inputs = processor(prompt, image, return_tensors="pt").to(model.device)
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
-    print("output:" + output)
     ans = []
-    dialogue = processor.batch_decode(output, skip_special_tokens=True)
-    print("dialog:" + dialogue)
-    for i in range(n):
-        assistant_reply = dialogue[i].split("assistant")[-1].strip()
-        ans.append(assistant_reply)
+    dialogue = processor.decode(output[0], skip_special_tokens=True)
+    assistant_reply = dialogue.split("location:")[-1].strip()
+    assistant_reply = assistant_reply.split("location:")[-1].strip()
+    print("assistant_reply:" + assistant_reply)
+    ans.append(assistant_reply)
+    # for i in range(n):
+    #     print("dialog:" + dialogue[i])
+    #     assistant_reply = dialogue[i].split("/INST")[-1].strip()
+    #     print("assistant_reply:" + assistant_reply)
+    #     ans.append(assistant_reply)
     return ans
 
 def get_response_rag(image_path, model, processor, candidates_gps, reverse_gps, max_tokens=200, temperature=0.7, n=10):
@@ -72,8 +74,8 @@ def get_response_rag(image_path, model, processor, candidates_gps, reverse_gps, 
     inputs = processor(prompt, image, return_tensors="pt").to(model.device)
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
     ans = []
+    print("output: " + output)
     dialogue = processor.batch_decode(output, skip_special_tokens=True)
-    print(dialog)
     for i in range(n):
         assistant_reply = dialogue[i].split("assistant")[-1].strip()
         ans.append(assistant_reply)
@@ -81,7 +83,6 @@ def get_response_rag(image_path, model, processor, candidates_gps, reverse_gps, 
 
 def process_row(row, model, processor, root_path, image_path):
     image_path = os.path.join(root_path, image_path, row["IMG_ID"])
-    print(image_path)
     try:
         response = get_response(image_path, model, processor)
     except Exception as e:
@@ -182,14 +183,16 @@ if __name__ == '__main__':
     rag_sample_num = 5
     searching_file_name = 'I_g3_im2gps3k'
 
-    #processor = LlavaNextProcessor.from_pretrained(model_path)
-    #model = LlavaNextForConditional.from_pretrained(model_path, torch_dtype=torch.float16, device_map="auto")
-    processor = AutoProcessor.from_pretrained(model_path)
-    model = LlavaForConditionalGeneration.from_pretrained(
-        model_path,
-        torch_dtype=torch.float16,
-        device_map="auto"
+    processor = LlavaNextProcessor.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf")
+    quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
     )
+    name = "llava-hf/llava-v1.6-mistral-7b-hf"
+    model = AutoModelForImageTextToText.from_pretrained(name, quantization_config=quantization_config, device_map="auto")
+    model.to("cuda:0")
+
     # pandarallel.initialize(progress_bar=True, nb_workers=4)
     args.add_argument('--root_path', type=str, default=root_path)
     args.add_argument('--text_path', type=str, default=text_path)

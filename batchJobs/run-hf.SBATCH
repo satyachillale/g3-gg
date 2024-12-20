@@ -16,7 +16,7 @@
 ##SBATCH --gres=gpu:4
 ##SBATCH --cpus-per-task=24
 
-#SBATCH --time=10:00:00
+#SBATCH --time=2:00:00
 #SBATCH --output=cvproject_%j.out
 #SBATCH --error=cvproject_%j.err
 ##SBATCH --exclusive
@@ -26,14 +26,5 @@ singularity exec --bind /scratch/sc9960 --nv \
             --overlay /scratch/sc9960/cv_project/g3-variant/singularity-image/g3-gg.ext3:ro \
             /scratch/work/public/singularity/cuda12.1.1-cudnn8.9.0-devel-ubuntu22.04.2.sif \
             /bin/bash -c "source /ext3/env.sh; 
-            cd /scratch/sc9960/cv_project/g3-variant/g3-gg;
-            python IndexSearch.py;
-            python IndexSearch.py;
-            python IndexSearchReverse.py;
-            python IndexSearchReverse.py;
-            python llm_predict.py --rag_sample_num=15;
-            python llm_predict.py --rag_sample_num=10;
-	    python llm_predict.py --rag_sample_num=5;
-	    python llm_predict.py --process=predict;
-	    running aggregate_llm_predictions.py;
-	    python IndexSearch.py"
+            cd /scratch/sc9960/cv_project/g3-variant/g3-gg; 
+            python llm_predict_hf.py"

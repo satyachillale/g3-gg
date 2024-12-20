@@ -2,10 +2,15 @@ File does not exist. Skipping model load.
 File does not exist. Skipping model load.
 File does not exist. Skipping model load.
 File does not exist. Skipping model load.
-70_f7_6244575510.jpg
-70_f7_6244575510.jpg
-70_f7_6244575510.jpg
-70_f7_6244575510.jpg
+create_mp_metadata
+create_mp_metadata
+create_mp_metadatacreate_mp_metadata
+
+text_data:  549394
+text_data:  549394
+text_data:  549394
+text_data:  549394
+metadata_dict_len:  549394
 logit_scale1 torch.Size([])
 logit_scale2 torch.Size([])
 logit_scale3 torch.Size([])
@@ -49,6 +54,7 @@ location_projection_else.0.weight torch.Size([512, 512])
 location_projection_else.0.bias torch.Size([512])
 location_projection_else.2.weight torch.Size([768, 512])
 location_projection_else.2.bias torch.Size([768])
+metadata_dict_len:  549394
 logit_scale1 torch.Size([])
 logit_scale2 torch.Size([])
 logit_scale3 torch.Size([])
@@ -92,6 +98,7 @@ location_projection_else.0.weight torch.Size([512, 512])
 location_projection_else.0.bias torch.Size([512])
 location_projection_else.2.weight torch.Size([768, 512])
 location_projection_else.2.bias torch.Size([768])
+metadata_dict_len:  549394
 logit_scale1 torch.Size([])
 logit_scale2 torch.Size([])
 logit_scale3 torch.Size([])
@@ -135,6 +142,7 @@ location_projection_else.0.weight torch.Size([512, 512])
 location_projection_else.0.bias torch.Size([512])
 location_projection_else.2.weight torch.Size([768, 512])
 location_projection_else.2.bias torch.Size([768])
+metadata_dict_len:  549394
 logit_scale1 torch.Size([])
 logit_scale2 torch.Size([])
 logit_scale3 torch.Size([])
