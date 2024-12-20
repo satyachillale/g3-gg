@@ -27,10 +27,13 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
 
         "role": "user",
         "content": [
-            {"type": "text", "text": '''Suppose you are an expert in geo-localization, you have the ability to give two number GPS coordination given an image.
-            Please give me the location of the given image.
-            Remember, you must have an answer, just output your best guess, don't answer me that you can't give a location. NO OTHER REPLY. 
-            Your answer should be in the following format without any other information: location:{"latitude": float, "longitude": float}. Follow the format perfectly. If you can't just give the following reply  location:{"latitude": 0.0, "longitude": 0.0}'''},
+            {"type": "text", "text": f'''
+                "You are a geo-localization expert. Given an image, you must guess its GPS coordinates. "
+                "Output your best guess in the following strict JSON format: "
+                "{{\"location\": {{\"latitude\": float, \"longitude\": float}}}}."
+                "If you cannot guess, use the default: "{{\"location\": {{\"latitude\": 0.0, \"longitude\": 0.0}}}}. "
+                "Provide no other text or errors."
+             '''},
             {"type": "image"},
             ],
         },
@@ -39,45 +42,48 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
     inputs = processor(prompt, image, return_tensors="pt").to(model.device)
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
     ans = []
-    dialogue = processor.decode(output[0], skip_special_tokens=True)
-    assistant_reply = dialogue.split("location:")[-1].strip()
-    assistant_reply = assistant_reply.split("location:")[-1].strip()
-    print("assistant_reply:" + assistant_reply)
-    ans.append(assistant_reply)
-    # for i in range(n):
-    #     print("dialog:" + dialogue[i])
-    #     assistant_reply = dialogue[i].split("/INST")[-1].strip()
-    #     print("assistant_reply:" + assistant_reply)
-    #     ans.append(assistant_reply)
+    for out in output:
+        dialogue = processor.decode(out, skip_special_tokens=True)
+        assistant_reply = dialogue.split("location:")[-1].strip()
+        assistant_reply = assistant_reply.split("location:")[-1].strip()
+        ans.append(assistant_reply)
+        # for i in range(n):
+        #     print("dialog:" + dialogue[i])
+        #     assistant_reply = dialogue[i].split("/INST")[-1].strip()
+        #     print("assistant_reply:" + assistant_reply)
+        #     ans.append(assistant_reply)
     return ans
 
-def get_response_rag(image_path, model, processor, candidates_gps, reverse_gps, max_tokens=200, temperature=0.7, n=10):
+def get_response_rag(image_path, model, processor, candidates_gps, reverse_gps, max_tokens=100, temperature=0.7, n=10):
     image = Image.open(image_path)
     conversation = [
         {
 
         "role": "user",
         "content": [
-            {"type": "text", "text": f"""Suppose you are an expert in geo-localization, Please analyze this image and give me a guess of the location.
-                Your answer must be to the coordinates level in (latitude, longitude) format.
-                For your reference, these are coordinates of some similar images: {candidates_gps}, and these are coordinates of some dissimilar images: {reverse_gps}.
-                Remember, you must have an answer, just output your best guess, don't answer me that you can't give an location.
-                Your answer should be in the following JSON format without any other information: {{"latitude": float,"longitude": float}}.
-                Your answer should be in the following JSON format without any other information: {{"latitude": float,"longitude": float}}.
-                """},
+            {"type": "text", "text": f'''
+                "You are a geo-localization expert. Given an image, you must guess its GPS coordinates. "
+                "For reference, similar images have coordinates: {candidates_gps}, and dissimilar images have coordinates: {reverse_gps}. "
+                "Output your best guess in the following strict JSON format: "
+                "{{\"location\": {{\"latitude\": float, \"longitude\": float}}}}."
+                "If you cannot guess, use the default: "{{\"location\": {{\"latitude\": 0.0, \"longitude\": 0.0}}}}. "
+                "Provide no other text or errors."
+             '''},
             {"type": "image"},
             ],
         },
     ]
-
+    
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
     inputs = processor(prompt, image, return_tensors="pt").to(model.device)
     output = model.generate(**inputs, max_new_tokens=max_tokens, temperature=temperature, num_return_sequences=n, do_sample=True, pad_token_id=processor.tokenizer.pad_token_id)
     ans = []
-    print("output: " + output)
     dialogue = processor.batch_decode(output, skip_special_tokens=True)
     for i in range(n):
-        assistant_reply = dialogue[i].split("assistant")[-1].strip()
+        assistant_reply = dialogue[i].split("[/INST]")[-1].strip()
+        assistant_reply = assistant_reply.split("\"location\":")[-1].strip()
+        ans.append(assistant_reply)
+        print("assistant_reply:" + assistant_reply)
         ans.append(assistant_reply)
     return ans
 
@@ -121,13 +127,15 @@ def run(args):
     if process == 'predict':
         if os.path.exists(os.path.join(root_path, result_path)):
             df = pd.read_csv(os.path.join(root_path, result_path))
+            df = df.head(100)
             df_rerun = df[df['response'].isna()]
             print('Need Rerun:', df_rerun.shape[0])
             df_rerun = df_rerun.progress_apply(lambda row: process_row(row, model, processor, root_path, image_path), axis=1)
             df.update(df_rerun)
-            df.to_csv(os.path.join(root_path, result_path), index=False)
+            df.to_csv(os.path.join("./llava", result_path), index=False)
         else:
             df = pd.read_csv(os.path.join(root_path, text_path))
+            df = df.head(100)
             df = df.progress_apply(lambda row: process_row(row, model, processor, root_path, image_path), axis=1)
             df.to_csv(os.path.join("./llava", result_path), index=False)
 
@@ -141,6 +149,7 @@ def run(args):
         database_df = pd.read_csv('./data/MP16_Pro_filtered.csv')
         if not os.path.exists(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path)):
             df = pd.read_csv(os.path.join(root_path, text_path))
+            df = df.head(100)
             I = np.load('./index/{}.npy'.format(searching_file_name))
             reverse_I = np.load('./index/{}_reverse.npy'.format(searching_file_name))
             for i in tqdm(range(df.shape[0])):
@@ -152,9 +161,9 @@ def run(args):
                 reverse_gps = database_df.loc[reverse_idx_lis, ['LAT', 'LON']].values
                 for idx, (latitude, longitude) in enumerate(reverse_gps):
                     df.loc[i, f'reverse_{idx}_gps'] = f'[{latitude}, {longitude}]'
-            df.to_csv(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path), index=False)
+            df.to_csv(os.path.join("./llava", str(rag_sample_num) + '_' + rag_path), index=False)
             df = df.progress_apply(lambda row: process_row_rag(row, model, processor, root_path, image_path, rag_sample_num), axis=1)
-            df.to_csv(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path), index=False)
+            df.to_csv(os.path.join("./llava", str(rag_sample_num) + '_' + rag_path), index=False)
         else:
             df = pd.read_csv(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path))
             # df_rerun = df[df['rag_coordinates'].apply(check_conditions)]
