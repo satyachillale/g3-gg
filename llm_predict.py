@@ -210,7 +210,8 @@ def run(args):
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
     base_url = "https://api.openai.com/v1/chat/completions"
-
+    api_key = os.getenv("OPENAI_API_KEY")
+    model_name = "gpt-4o"
     root_path = "./data/im2gps3k"
     text_path = "im2gps3k_places365.csv"
     image_path = "images"

@@ -16,7 +16,7 @@ YFCC4K: [images](http://www.mediafire.com/file/3og8y3o6c9de3ye/yfcc4k.zip) | [me
 # test on cuda12.0
 conda create -n g3 python=3.9
 pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
-pip install transformers accelerate huggingface_hub pandas
+pip install -r requirements
 ```
 
 # Running samples
@@ -34,23 +34,12 @@ Parameters in IndexSearch.py
 - dataset --> im2gps3k or yfcc4k
 - database --> default mp16
 
-Then, you also need to construct index for negative samples by modifying images_embeds to -1 * images_embeds
+Then, you also need to construct index for negative samples by using `python IndexSearchReverse.py`. 
 
-Then, you can run `llm_predict_hf.py` or `llm_predict.py` to generate llm predictions.
+Then, you can run `llm_predict_hf.py` for llama LMM or `llm_predict.py` for GPT-4o or `llm_predict_mis.py` for mistral to generate llm predictions. For GPT-4o you need to set an API key as `export OPENAI_API_KEY="your_api_key_here"`
 
 After that, `running aggregate_llm_predictions.py` to aggregate the predictions.
 
 3. Geo-verification
 
-`python IndexSearch.py --index=g3 --dataset=im2gps3k or yfcc4k` to verificate predictions and evaluate.
-
-# Citation
-
-```bib
-@article{jia2024g3,
-  title={G3: An Effective and Adaptive Framework for Worldwide Geolocalization Using Large Multi-Modality Models},
-  author={Jia, Pengyue and Liu, Yiding and Li, Xiaopeng and Zhao, Xiangyu and Wang, Yuhao and Du, Yantong and Han, Xiao and Wei, Xuetao and Wang, Shuaiqiang and Yin, Dawei},
-  journal={arXiv preprint arXiv:2405.14702},
-  year={2024}
-}
-```
+`python IndexSearch.py --index=g3 --dataset=im2gps3k` to verificate predictions and evaluate.

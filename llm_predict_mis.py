@@ -31,7 +31,7 @@ def get_response(image_path, model, processor, max_tokens=200, temperature=0.7, 
                 "You are a geo-localization expert. Given an image, you must guess its GPS coordinates. "
                 "Output your best guess in the following strict JSON format: "
                 "{{\"location\": {{\"latitude\": float, \"longitude\": float}}}}."
-                "If you cannot guess, use the default: "{{\"location\": {{\"latitude\": 0.0, \"longitude\": 0.0}}}}. "
+                "If you cannot guess, use the default output: "{{\"location\": {{\"latitude\": null, \"longitude\": null}}}}. "
                 "Provide no other text or errors."
              '''},
             {"type": "image"},
@@ -66,7 +66,7 @@ def get_response_rag(image_path, model, processor, candidates_gps, reverse_gps, 
                 "For reference, similar images have coordinates: {candidates_gps}, and dissimilar images have coordinates: {reverse_gps}. "
                 "Output your best guess in the following strict JSON format: "
                 "{{\"location\": {{\"latitude\": float, \"longitude\": float}}}}."
-                "If you cannot guess, use the default: "{{\"location\": {{\"latitude\": 0.0, \"longitude\": 0.0}}}}. "
+                "If you cannot guess, use the default output    : "{{\"location\": {{\"latitude\": null, \"longitude\": null}}}}. "
                 "Provide no other text or errors."
              '''},
             {"type": "image"},
