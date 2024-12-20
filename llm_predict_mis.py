@@ -166,6 +166,7 @@ def run(args):
             df.to_csv(os.path.join("./llava", str(rag_sample_num) + '_' + rag_path), index=False)
         else:
             df = pd.read_csv(os.path.join(root_path, str(rag_sample_num) + '_' + rag_path))
+            df = df.head(100)
             # df_rerun = df[df['rag_coordinates'].apply(check_conditions)]
             df_rerun = df[df['rag_response'].isna()]
             print('Need Rerun:', df_rerun.shape[0])
