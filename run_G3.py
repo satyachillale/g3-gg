@@ -123,7 +123,7 @@ def main():
         .to_tuple("img", "text", "longitude", "latitude")
     )
 
-    dataloader = wds.WebLoader(wds_dataset, batch_size=256, shuffle=False, num_workers=16, pin_memory=True, prefetch_factor=2)
+    dataloader = wds.WebLoader(wds_dataset, batch_size=256, shuffle=False, num_workers=6, pin_memory=True, prefetch_factor=2)
 
     params = []
     for name, param in model.named_parameters():
